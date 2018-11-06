@@ -4,7 +4,7 @@
 ; CMPU-101 
 ; Fall 2018
 ; Assign 3
-; <your name> 
+; Jessica Bezek
 ;
 ; Description: Uses a list of bouncing balls to animate many balls
 ; of different sizes and colors, all moving in the same scene at 
@@ -48,15 +48,27 @@
 ; here's one of my ball CONSTANTS, which you may use or modify
 ; if you like to define the rest.
 (define BALL-AT-LEFT 
-  (make-ball (circle (+ RADIUS 4) "solid" "teal")
-             (+ RADIUS 4) (/ HEIGHT 2) -4 4)) 
+  (make-ball (circle (+ RADIUS 10) "solid" "cyan")
+             (+ RADIUS 10) (/ HEIGHT 2) -13 13))
 
+(define BALL-AT-RIGHT 
+  (make-ball (circle (+ RADIUS 25) "solid" "magenta")
+             (+ RADIUS 400) (/ HEIGHT 3) -3 3))
+
+(define BALL-AT-TOP 
+  (make-ball (circle RADIUS "solid" "yellow")
+             (/ WIDTH 10) (+ RADIUS 3) -7 7))
+; Potentially make the dx or dy of ball-at-right and ball-at-top the opposite sign
+
+(define BALL-AT-BOTTOM 
+  (make-ball (circle (+ RADIUS 18) "solid" "green")
+             (/ WIDTH 2) (- HEIGHT (+ RADIUS 20)) -20 20))
 
 ; Define INIT-LOB to be a list-of-balls:
 ; You will use this to be the initial state of the world.
 ; I've defined it to be the empty list, but you should define it
 ; to contain the four example ball CONSTANTS you just defined. 
-(define INIT-LOB '()) 
+(define INIT-LOB (list BALL-AT-LEFT BALL-AT-RIGHT BALL-AT-TOP BALL-AT-BOTTOM))  
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -97,51 +109,148 @@
 
 ; ball -> number
 ; computes the radius of given ball
-(define (ball-radius b) ...)
+(define (ball-radius b)
+  (/ (image-width (ball-im b)) 2)) 
+
+(check-expect (ball-radius BALL-AT-LEFT) 35)
+(check-expect (ball-radius BALL-AT-RIGHT) 50)
+(check-expect (ball-radius BALL-AT-TOP) 25)
+(check-expect (ball-radius BALL-AT-BOTTOM) 43)
+
 
 ; ball -> boolean
 ; determines whether the ball reached the top edge of scene
-(define (top-edge? b) ...)
+(define (top-edge? b)
+  (<= (ball-y b) (ball-radius b)))
+
+(check-expect (top-edge? BALL-AT-TOP) #true)
+(check-expect (top-edge? BALL-AT-BOTTOM) #false)
+(check-expect (top-edge? BALL-AT-LEFT) #false)
+(check-expect (top-edge? BALL-AT-RIGHT) #false)
+
 
 ; ball -> boolean
 ; determines whether the ball reached the bottom edge of scene
-(define (bottom-edge? b) ...)
+(define (bottom-edge? b)
+  (>= (ball-y b) (- HEIGHT (ball-radius b))))
+
+(check-expect (bottom-edge? BALL-AT-TOP) #false)
+(check-expect (bottom-edge? BALL-AT-BOTTOM) #true)
+(check-expect (bottom-edge? BALL-AT-LEFT) #false)
+(check-expect (bottom-edge? BALL-AT-RIGHT) #false)
+
 
 ; ball -> boolean
 ; determines whether the ball reached the left edge of scene
-(define (left-edge? b) ...)
+(define (left-edge? b)
+  (<= (ball-x b) (ball-radius b)))
+
+(check-expect (left-edge? BALL-AT-TOP) #false)
+(check-expect (left-edge? BALL-AT-BOTTOM) #false)
+(check-expect (left-edge? BALL-AT-LEFT) #true)
+(check-expect (left-edge? BALL-AT-RIGHT) #false)
+
 
 ; ball -> boolean
 ; determines whether the ball reached the right edge of scene
-(define (right-edge? b) ...)
+(define (right-edge? b)
+  (>= (ball-x b) (- WIDTH (ball-radius b))))
+
+(check-expect (left-edge? BALL-AT-TOP) #false)
+(check-expect (left-edge? BALL-AT-BOTTOM) #false)
+(check-expect (left-edge? BALL-AT-LEFT) #false)
+(check-expect (left-edge? BALL-AT-RIGHT) #true)
+
 
 ; ball -> ball
 ; reverse ball's up-down direction   
-(define (reverse-up-down b) ...)
+(define (reverse-up-down b)
+  (make-ball (ball-im b) (ball-x b) (ball-y b) (ball-dx b) (- (ball-dy b))))
+
+(check-expect (reverse-up-down BALL-AT-TOP) (make-ball (circle (+ RADIUS 2) "solid" "yellow")
+             (+ RADIUS 92) (/ HEIGHT 10) -7 -7))
+(check-expect (reverse-up-down (make-ball (circle (+ RADIUS 50) "solid" "green")
+             (+ RADIUS 21) (/ HEIGHT 200) -18 -18)) (make-ball (circle (+ RADIUS 50) "solid" "green")
+             (+ RADIUS 21) (/ HEIGHT 200) -18 18))
+(check-expect (reverse-up-down (make-ball (circle (+ RADIUS 2) "solid" "yellow")
+             (+ RADIUS 100) (/ HEIGHT 20) -8 -8)) (make-ball (circle (+ RADIUS 2) "solid" "yellow")
+             (+ RADIUS 100) (/ HEIGHT 20) -8 8))
+
 
 ; ball -> ball
 ; reverse ball's left-right direction   
-(define (reverse-left-right b) ...)
+(define (reverse-left-right b)
+  (make-ball (ball-im b) (ball-x b) (ball-y b) (- (ball-dx b)) (ball-dy b)))
+
+(check-expect (reverse-left-right (make-ball (circle (+ RADIUS 50) "solid" "green") (+ RADIUS 200) (/ HEIGHT 15) -18 -18))
+                                  (make-ball (circle (+ RADIUS 50) "solid" "green") (+ RADIUS 200) (/ HEIGHT 15) 18 -18))
+(check-expect (reverse-left-right (make-ball (circle (+ RADIUS 20) "solid" "magenta") (+ RADIUS 33) (/ HEIGHT 150) -3 3))
+                                  (make-ball (circle (+ RADIUS 20) "solid" "magenta") (+ RADIUS 33) (/ HEIGHT 150) 3 3))
+              
 
 ; ball -> ball
 ; changes direction of given ball if it hit the top or bottom edge
-(define (bounce-up-down b) ...)
+(define (bounce-up-down b)
+  (cond
+    [(or (bottom-edge? b) (top-edge? b)) (reverse-up-down b)]
+    [else b]))
+
+(check-expect (bounce-up-down BALL-AT-TOP) (make-ball (circle RADIUS "solid" "yellow")
+             (/ WIDTH 10) (+ RADIUS 3) -7 -7))
+(check-expect (bounce-up-down BALL-AT-BOTTOM) (make-ball (circle (+ RADIUS 18) "solid" "green")
+             (/ WIDTH 2) (- HEIGHT (+ RADIUS 20)) -20 -20))
+(check-expect (bounce-up-down (make-ball (circle (+ RADIUS 18) "solid" "green")
+             (/ WIDTH 4) (- HEIGHT (+ RADIUS 200)) -20 20)) (make-ball (circle (+ RADIUS 18) "solid" "green")
+             (/ WIDTH 4) (- HEIGHT (+ RADIUS 200)) -20 20)) 
+
 
 ; ball -> ball
 ; changes direction of given ball if it hit the left or right edge
-(define (bounce-left-right b) ...)
+(define (bounce-left-right b)
+  (cond
+    [(or (left-edge? b) (right-edge? b)) (reverse-left-right b)]
+    [else b]))
+
+(check-expect (bounce-left-right BALL-AT-LEFT) (make-ball (circle (+ RADIUS 10) "solid" "cyan")
+             (+ RADIUS 10) (/ HEIGHT 2) 13 13))
+(check-expect (bounce-left-right BALL-AT-RIGHT) (make-ball (circle (+ RADIUS 25) "solid" "magenta")
+             (+ RADIUS 400) (/ HEIGHT 3) 3 3))
+(check-expect (bounce-left-right (make-ball (circle RADIUS "solid" "yellow")
+             (/ WIDTH 10) (+ RADIUS 3) -7 7)) (make-ball (circle RADIUS "solid" "yellow")
+             (/ WIDTH 10) (+ RADIUS 3) -7 7))
 
 ; ball -> ball
 ; moves the given ball by its dx and dy amounts
-(define (move-ball b) ...)
+(define (move-ball b)
+  (make-ball (ball-im b) (+ (ball-x b) (ball-dx b)) (+ (ball-y b) (ball-dy b)) (ball-dx b) (ball-dy b)))
+
+(check-expect (move-ball BALL-AT-TOP) (make-ball (circle RADIUS "solid" "yellow")
+             (+ (/ WIDTH 10) -7) (+ (+ RADIUS 3) 7) -7 7))
+(check-expect (move-ball BALL-AT-RIGHT) (make-ball (circle (+ RADIUS 25) "solid" "magenta")
+             (+ (+ RADIUS 400) -3) (+ (/ HEIGHT 3) 3) -3 3))
 
 ; list-of-balls -> list-of-balls
 ; moves (and possibly bounces) each ball in given list
-(define (move-list-of-balls lob) ...)
+(define (move-list-of-balls lob)
+  (cond
+    [(empty? lob) lob] 
+    [(cons? lob) (cons (move-ball (bounce-up-down (bounce-left-right (first lob))))
+                     (move-list-of-balls (rest lob)))]))
+
+(check-expect (move-list-of-balls '()) '())
+(check-expect (move-list-of-balls (list BALL-AT-TOP BALL-AT-RIGHT BALL-AT-LEFT BALL-AT-BOTTOM))
+              (cons (make-ball (circle RADIUS "solid" "yellow")
+             (+ (/ WIDTH 10) -7) (+ (+ RADIUS 3) -7) -7 -7) (cons (make-ball (circle (+ RADIUS 25) "solid" "magenta")
+             (+ (+ RADIUS 400) 3) (+ (/ HEIGHT 3) 3) 3 3) (cons (make-ball (circle (+ RADIUS 10) "solid" "cyan")
+             (+ (+ RADIUS 10) 13) (+ (/ HEIGHT 2) 13) 13 13) (cons (make-ball (circle (+ RADIUS 18) "solid" "green")
+             (+ (/ WIDTH 2) -20) (+ (- HEIGHT (+ RADIUS 20)) -20) -20 -20))))))                    
 
 ; ball image -> image
 ; renders given ball b on given background bg
-(define (render-ball b bg) ...)
+(define (render-ball b bg)
+  (place-image (ball-im b) (ball-x b) (ball-y b) bg))
+
+;;;;;;;;;CHECK EXPECTS?
   
 ; list-of-balls -> image 
 ; produces image of each ball at each given current position on
@@ -151,13 +260,13 @@
 (define (render-balls lob) 
   (cond [(empty? lob) BACKGROUND]
         [else (render-ball (first lob)
-                           (render-balls (rest lob)))]))
+                           (render-balls (rest lob)))])) 
 
 ; Here's the main function with the big-bang expression!
 ; Once you've implemented move-list-of-balls, uncomment on-tick below.
 (define (main w)
   (big-bang w
-            ;(on-tick move-list-of-balls 1/28) 
+            (on-tick move-list-of-balls 1/28) 
             (to-draw render-balls)))
 
 ; Run program automatically, or type this in Interactions Pane:
